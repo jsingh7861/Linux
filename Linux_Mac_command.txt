@@ -1,0 +1,72 @@
+Linux/Mac Frequently Used Commands
+November 7, 2016 in Technology, Frequently Used, Linux Commands, Mac Commands, Hacks
+Some of the very basic commands I use very freqently on my daily job on my Workstation(MacOS) & on the Remote servers(Linux).
+AWS
+List all instance-id behind the ELB
+aws elb describe-load-balancers --output text --load-balancer-names <lb_name> | grep INSTANCES | awk '{print $2}'
+Get all the instances public ip-address behind the ELB
+aws elb describe-load-balancers --output text --load-balancer-names <lb_name> | grep INSTANCES | awk '{print $2}' | xargs aws ec2 describe-instances --output text --instance-ids | grep INSTANCES | awk '{print $14}'
+Launching instance with a instance-store volumes
+aws ec2 run-instances --image-id <ami-id> --security-groups <group-name> --instance-type <instance-type> --region <region> --key-name <keypair-name>  --placement AvailabilityZone=us-east-1d --iam-instance-profile Name=<IAM-role-name> --block-device-mappings "[{\"DeviceName\": \"/dev/sdc\",\"VirtualName\":\"ephemeral1\"}]"
+Whitelisting ips
+aws ec2 authorize-security-group-ingress --group-name <group-name> --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 8000, "ToPort": 8000, "IpRanges": [{"CidrIp": "192.168.10.20/28"}, {"CidrIp": "192.168.20.232/30"}, {"CidrIp": "192.168.10.40/32"}]} ]'
+List all users API key ID
+for USER in `aws iam list-users --output text | awk '{print $2}' | cut -f2 -d/`; do aws iam list-access-keys --user-name $USER --output text >> iam_user_apikeylist.txt ; done
+Calculating AWS S3 billing report
+Value / (1024 * 1024 * 1024 * 24)
+To change live filesystem journaling option
+tune2fs -O has_journal -o journal_data_writeback <part>
+Enable hashed b-tree to speed up lookups for large directories
+tune2fs -O dir_index <part>
+dir_index : is a hashed b-tree implementation for ext3, it’s riskfree and adds a bit of performance to your filesystem.
+Optimize directories in filesystem
+e2fsck -D <part>
+This option causes e2fsck to try to optimize all directories, either by reindexing them if the filesystem supports directory indexing, or by sorting and compressing directories for smaller directories, or for filesystems using traditional linear directories.
+System Profiling
+oprofiled --session-dir=/var/lib/oprofile --separate-lib=1 --separate-kernel=1 --separate-thread=0 --separate-cpu=0 --events= --no-vmlinux
+sudo opcontrol --no-vmlinux --separate=kernel
+sudo opcontrol --deinit; sudo modprobe oprofile timer=1
+sudo opcontrol --reset;sudo opcontrol --start
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8000
+Iptables : List all NAT rules
+iptables -t nat -L -n -v
+Iptables : Filter based on string
+This rule will filter all the HTTP request based on the uri string given
+
+iptables -I INPUT -p tcp --dport 8080 -m string --algo bm --string "status" -j REJECT
+Check if host is alive
+for I in $HOSTLIST; do  ping -c 2 $I > /dev/null 2> /dev/null; if [ $? = 0 ]; then echo "$I Alive"; else echo "$I Dead"; fi; done
+Dump everything on interface eth0
+tcpdump -s 65535 -i eth0 -w /home/ec2-user/tcpdump.txt
+
+View packets on port 8998 only for interface eth0
+tcpdump -l -XXvvv -i eth0 port 8998
+View packets only for a hostname
+tcpdump -l -XXvvv hostname
+Viewing the complete request
+tcpdump -vvvs 1500 -l -A host example.com
+To view only for port 25
+
+tcpdump -vv -x -X -s 1500 -i eth1 'port 25'
+Recursively display memory usage
+echo -en "Time\t\tMemUsage(MB)\n~~~~\t\t~~~~~~~~~~~~\n"; while [ 1 ] ; do  stat=`date && free -m | grep "+ buffer"`;echo $AA | awk '{print $4"\t"$9}' ; sleep 60; done
+Deleting a block/multiple-line in a file
+sed -i '/<plugins plugin="myplugin"/,/<\/plugins>/d' sample.xml
+Extract an RPM package
+rpm2cpio rpm.rpm | cpio -idmv
+Set username & email
+The first thing to do is to set your user name and email address. Every Git commit uses this information, and it’s immutably cooked into your commits.
+
+git config --global user.name "Your Name"
+git config --global user.email yourmail_id@example.com
+Pull with automatic rebase
+Force all new branches to automatically use rebase
+
+git config branch.autosetuprebase always
+Force existing branches to use rebase
+
+git config branch.<branch-name>.rebase true
+revert to last commit
+git reset --soft HEAD~1
+Empty/Zero a log file without restarting the service which has opened it
+> /path/to/logfile.log
